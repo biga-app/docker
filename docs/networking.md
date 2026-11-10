@@ -203,7 +203,7 @@ the address Caddy sees it from. Through a loopback port that is the Docker
 bridge gateway (`docker network inspect biga_edge` shows it, typically in
 `172.16.0.0/12`).
 
-Your proxy must stream server-sent events and allow large uploads. For nginx:
+Your proxy must not buffer the live stream (a long-lived streaming response) and must allow large uploads. For nginx:
 
 ```nginx
 location / {
