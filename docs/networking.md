@@ -2,7 +2,7 @@
 
 How to make your biga reachable: on the internet over IPv4 and IPv6, on an
 office or home network, over a VPN, or behind a proxy you already run. The
-same guide is on the website at [biga.sh/docs/networking](https://biga.sh/docs/networking).
+same guide is on the website at [biga.n10nce.dev/docs/networking](https://biga.n10nce.dev/docs/networking).
 
 ## How traffic flows
 

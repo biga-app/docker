@@ -1,8 +1,8 @@
 <p align="center">
-  <a href="https://website-vw4l.vercel.app/">
+  <a href="https://biga.n10nce.dev/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://website-vw4l.vercel.app/brand/biga-logo-light.svg">
-      <img src="https://website-vw4l.vercel.app/brand/biga-logo.svg" width="180" alt="biga">
+      <source media="(prefers-color-scheme: dark)" srcset="https://biga.n10nce.dev/brand/biga-logo-light.svg">
+      <img src="https://biga.n10nce.dev/brand/biga-logo.svg" width="180" alt="biga">
     </picture>
   </a>
 </p>
@@ -14,16 +14,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/biga-sh/docker/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/biga-sh/docker/ci.yml?branch=main&style=flat-square&labelColor=0c0d10&label=ci" alt="CI status"></a>
+  <a href="https://github.com/biga-app/docker/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/biga-app/docker/ci.yml?branch=main&style=flat-square&labelColor=0c0d10&label=ci" alt="CI status"></a>
   <a href="compose.yaml"><img src="https://img.shields.io/badge/docker%20compose-v2-63e197?style=flat-square&labelColor=0c0d10" alt="Docker Compose v2"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-63e197?style=flat-square&labelColor=0c0d10" alt="MIT license"></a>
 </p>
 
 <p align="center">
-  <a href="https://website-vw4l.vercel.app/">Website</a> ·
-  <a href="https://website-vw4l.vercel.app/docs">Documentation</a> ·
+  <a href="https://biga.n10nce.dev/">Website</a> ·
+  <a href="https://biga.n10nce.dev/docs">Documentation</a> ·
   <a href="docs/networking.md">Networking guide</a> ·
-  <a href="https://github.com/biga-sh/docker/issues">Issues</a>
+  <a href="https://github.com/biga-app/docker/issues">Issues</a>
 </p>
 
 ---
@@ -37,7 +37,7 @@ You need Docker Engine 24+ with Compose v2 (Linux for anything real; Docker Desk
 ### Configure
 
 ```bash
-git clone https://github.com/biga-sh/docker.git biga && cd biga
+git clone https://github.com/biga-app/docker.git biga && cd biga
 ./scripts/setup.sh
 ```
 
@@ -60,7 +60,7 @@ The first build takes a few minutes. Wait until every service reports `healthy`.
 BIGA_API_URL=https://biga.example.com BIGA_ACCESS_KEY=bgk_… biga start
 ```
 
-Viewers only need the link the [CLI](https://github.com/biga-sh/cli) prints.
+Viewers only need the link the [CLI](https://github.com/biga-app/cli) prints.
 
 ## Modes
 
@@ -77,8 +77,8 @@ IPv4, IPv6, intranets, VPNs and existing proxies are covered in the [networking 
 | Service | Role |
 | --- | --- |
 | `caddy` | TLS, HTTP/3 and routing: `/api/sessions/*` to the server, everything else to the site. The only published ports. |
-| `server` | The API server, built from [biga-sh/server](https://github.com/biga-sh/server) |
-| `web` | The site and viewer, built from [biga-sh/website](https://github.com/biga-sh/website) |
+| `server` | The API server, built from [biga-app/server](https://github.com/biga-app/server) |
+| `web` | The site and viewer, built from [biga-app/website](https://github.com/biga-app/website) |
 | `postgres` | Every session, in the `pgdata` volume |
 
 Every container runs with `no-new-privileges`, Linux capabilities dropped, a read-only root filesystem and rotated logs. Secrets stay in `.env`, mode `600`, ignored by git.
@@ -111,23 +111,23 @@ CI runs `shellcheck` on the scripts, validates every combination of Compose file
 
 ## Documentation
 
-- [Docker](https://website-vw4l.vercel.app/docs/docker)
-- [Self-hosting](https://website-vw4l.vercel.app/docs/self-hosting)
-- [Configuration](https://website-vw4l.vercel.app/docs/configuration)
+- [Docker](https://biga.n10nce.dev/docs/docker)
+- [Self-hosting](https://biga.n10nce.dev/docs/self-hosting)
+- [Configuration](https://biga.n10nce.dev/docs/configuration)
 - [Networking guide](docs/networking.md)
 
 ## Repositories
 
 | Repository | What it is |
 | --- | --- |
-| [cli](https://github.com/biga-sh/cli) | The `biga` command. Watches a folder and streams every save. |
-| [server](https://github.com/biga-sh/server) | The Go API. Stores sessions and streams updates to viewers. |
-| [website](https://github.com/biga-sh/website) | The site, the live viewer and the documentation. |
-| [docker](https://github.com/biga-sh/docker) | Self-hosting: the whole stack with Docker Compose. |
+| [cli](https://github.com/biga-app/cli) | The `biga` command. Watches a folder and streams every save. |
+| [server](https://github.com/biga-app/server) | The Go API. Stores sessions and streams updates to viewers. |
+| [website](https://github.com/biga-app/website) | The site, the live viewer and the documentation. |
+| [docker](https://github.com/biga-app/docker) | Self-hosting: the whole stack with Docker Compose. |
 
 ## Contributing
 
-Bug reports, focused fixes and pull requests are welcome. Read the [contributing guide](https://github.com/biga-sh/.github/blob/main/CONTRIBUTING.md) before you start, and report vulnerabilities privately as described in the [security policy](https://github.com/biga-sh/docker/security/policy), not in a public issue.
+Bug reports, focused fixes and pull requests are welcome. Read the [contributing guide](https://github.com/biga-app/.github/blob/main/CONTRIBUTING.md) before you start, and report vulnerabilities privately as described in the [security policy](https://github.com/biga-app/docker/security/policy), not in a public issue.
 
 ## License
 
@@ -136,5 +136,5 @@ biga is [MIT licensed](LICENSE).
 ---
 
 <p align="center">
-  <sub><a href="https://website-vw4l.vercel.app/">biga</a> · Made for people who teach, pair and build in public.</sub>
+  <sub><a href="https://biga.n10nce.dev/">biga</a> · Made for people who teach, pair and build in public.</sub>
 </p>

@@ -60,13 +60,13 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: biga-sh/server
+          repository: biga-app/server
           path: src/server
           persist-credentials: false
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: biga-sh/website
+          repository: biga-app/website
           path: src/website
           persist-credentials: false
 
