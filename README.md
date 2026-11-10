@@ -79,7 +79,7 @@ IPv4, IPv6, intranets, VPNs and existing proxies are covered in the [networking 
 | `caddy` | TLS, HTTP/3 and routing: `/api/sessions/*` to the server, everything else to the site. The only published ports. |
 | `server` | The API server, built from [biga-app/server](https://github.com/biga-app/server) |
 | `web` | The site and viewer, built from [biga-app/website](https://github.com/biga-app/website) |
-| `postgres` | Every session, in the `pgdata` volume |
+| `postgres` | Every session, in the `pgdata` volume. File content too, unless `compose.s3.yaml` moves it to object storage. |
 
 Every container runs with `no-new-privileges`, Linux capabilities dropped, a read-only root filesystem and rotated logs. Secrets stay in `.env`, mode `600`, ignored by git.
 
@@ -88,7 +88,7 @@ Every container runs with `no-new-privileges`, Linux capabilities dropped, a rea
 ```bash
 docker compose logs -f server                                            # follow a service
 docker compose pull --ignore-buildable && docker compose up -d --build   # update
-./scripts/backup.sh                                                      # dump the database to backups/
+./scripts/backup.sh                                                      # dump the database (and the object store, with compose.s3.yaml)
 ./scripts/restore.sh backups/biga-….dump                                 # restore a dump
 docker compose run --rm --no-deps server gen-key                         # another access key
 docker compose down                                                      # stop; data stays in volumes
@@ -100,6 +100,9 @@ To revoke an access key, remove it from `BIGA_ACCESS_KEYS` in `.env` and run `do
 | --- | --- |
 | `compose.ipv6.yaml` | IPv6 inside Docker, so IPv6 visitors keep their addresses |
 | `compose.scale.yaml` | Several API server instances sharing live events through Valkey |
+| `compose.s3.yaml` | File content in S3-compatible object storage instead of Postgres |
+
+With `compose.s3.yaml`, file content lives in an S3-compatible store (SeaweedFS) on the private network and Postgres keeps only metadata. After switching, move content already in Postgres with `docker compose -f compose.yaml -f compose.s3.yaml run --rm --no-deps server blobs migrate`; it can be run again if interrupted. `setup.sh` writes the store's credentials (`S3_ACCESS_KEY`, `S3_SECRET_KEY`) into new `.env` files; add them by hand to an older one. Backups then include `backups/biga-<time>.objects.tar`, which `restore.sh` restores when it sits next to the dump.
 
 Stop the stack before changing which files it uses, then start it with `docker compose -f compose.yaml -f compose.ipv6.yaml up -d`. `COMPOSE_FILE` in `.env` makes the choice stick.
 

@@ -1,0 +1,60 @@
+# Keeps file content in S3-compatible object storage instead of Postgres: an
+# S3 service (SeaweedFS) on the private network, and the server pointed at it.
+# Use with the main file:
+#
+#   docker compose -f compose.yaml -f compose.s3.yaml up -d
+#
+# Postgres then holds only metadata, so it stays small and its backups fast.
+# To use a bucket you already have (AWS S3, R2, Backblaze), skip this file and
+# set BIGA_S3_* on the server instead (see the self-hosting guide).
+#
+# Content already in Postgres moves over with:
+#   docker compose -f compose.yaml -f compose.s3.yaml run --rm --no-deps server blobs migrate
+services:
+  s3:
+    restart: unless-stopped
+    image: ${BIGA_S3_IMAGE:-chrislusf/seaweedfs:latest}
+    # The identity file is written to the tmpfs from the credentials, then
+    # the image's own entrypoint takes over.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        printf '{"identities":[{"name":"biga","credentials":[{"accessKey":"%s","secretKey":"%s"}],"actions":["Admin","Read","Write","List","Tagging"]}]}' "$$S3_ACCESS_KEY" "$$S3_SECRET_KEY" >/tmp/s3.json
+        exec /entrypoint.sh "$$@"
+      - --
+    command: ["server", "-dir=/data", "-s3", "-s3.config=/tmp/s3.json", "-ip.bind=0.0.0.0", "-volume.max=64"]
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?run ./scripts/setup.sh --force, or set S3_ACCESS_KEY in .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?run ./scripts/setup.sh --force, or set S3_SECRET_KEY in .env}
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    # The entrypoint prepares /data as root, then drops to its own user.
+    cap_add: [CHOWN, SETGID, SETUID]
+    read_only: true
+    volumes:
+      - s3data:/data
+    tmpfs: [/tmp]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:9333/cluster/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    logging:
+      driver: local
+      options: { max-size: "10m", max-file: "5" }
+    networks: [backend]
+
+  server:
+    environment:
+      BIGA_S3_ENDPOINT: s3:8333
+      BIGA_S3_BUCKET: ${BIGA_S3_BUCKET:-biga}
+      BIGA_S3_INSECURE: "true" # the private network; nothing else can reach it
+      BIGA_S3_CREATE_BUCKET: "true"
+      BIGA_S3_ACCESS_KEY: ${S3_ACCESS_KEY:?run ./scripts/setup.sh --force, or set S3_ACCESS_KEY in .env}
+      BIGA_S3_SECRET_KEY: ${S3_SECRET_KEY:?run ./scripts/setup.sh --force, or set S3_SECRET_KEY in .env}
+    depends_on:
+      s3: { condition: service_healthy }
+
+volumes:
+  s3data:

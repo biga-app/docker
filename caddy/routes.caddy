@@ -14,6 +14,11 @@ handle @api {
 		}
 		lb_policy least_conn
 		lb_try_duration 5s
+		# One HTTP/2 connection per server carries every request and live
+		# stream, instead of a TCP connection each.
+		transport http {
+			versions h2c
+		}
 		# One clean hop: the client address Caddy determined, after its own
 		# trusted_proxies. The server trusts Caddy and reads only this.
 		header_up X-Forwarded-For {client_ip}

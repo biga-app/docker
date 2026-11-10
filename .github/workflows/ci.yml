@@ -34,6 +34,8 @@ jobs:
           docker compose -f compose.yaml -f compose.ipv6.yaml config --quiet
           docker compose -f compose.yaml -f compose.scale.yaml config --quiet
           docker compose -f compose.yaml -f compose.ipv6.yaml -f compose.scale.yaml config --quiet
+          docker compose -f compose.yaml -f compose.s3.yaml config --quiet
+          docker compose -f compose.yaml -f compose.ipv6.yaml -f compose.scale.yaml -f compose.s3.yaml config --quiet
 
       - name: Caddyfiles, every mode
         run: |
@@ -52,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        overrides: ["", "-f compose.ipv6.yaml -f compose.scale.yaml"]
+        overrides: ["", "-f compose.ipv6.yaml -f compose.scale.yaml", "-f compose.s3.yaml"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -70,6 +72,16 @@ jobs:
           path: src/website
           persist-credentials: false
 
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: biga-app/cli
+          path: src/cli
+          persist-credentials: false
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+
       - name: Start the stack
         env:
           OVERRIDES: ${{ matrix.overrides }}
@@ -80,29 +92,38 @@ jobs:
           # shellcheck disable=SC2086 # OVERRIDES is a list of flags
           docker compose -f compose.yaml $OVERRIDES up -d --build --wait --wait-timeout 300
 
+      - name: Build the CLI
+        run: go build -C src/cli -o "$PWD/biga" ./cmd/biga
+
       - name: Broadcast through it
         run: |
           set -eu
           key=$(grep '^BIGA_ACCESS_KEYS=' .env | cut -d= -f2)
-          api=http://localhost:8080/api/sessions/smoke1
-          curl -fsS -o /dev/null http://localhost:8080/
+          url=http://localhost:8080
+          curl -fsS -o /dev/null "$url/"
 
           # No key, no session.
-          test "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' -d '{}' "$api")" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/x-protobuf' -H 'Accept: application/x-protobuf' "$url/api/sessions/smoke1")" = 401
 
-          token=$(curl -fsS -X PUT -H 'Content-Type: application/json' -H "X-Biga-Key: $key" -d '{"title":"smoke"}' "$api" \
-            | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["token"])')
+          project=$(mktemp -d)
+          printf 'hello\n' > "$project/a.txt"
+          BIGA_API_URL=$url BIGA_ACCESS_KEY=$key BIGA_HOME=$(mktemp -d) BIGA_NO_UPDATE_CHECK=1 \
+            ./biga start --session smoke1 "$project" >"$RUNNER_TEMP/cli.log" 2>&1 &
+          cli=$!
+          for _ in $(seq 1 60); do
+            grep -q 'Started' "$RUNNER_TEMP/cli.log" && break
+            sleep 0.5
+          done
+          cat "$RUNNER_TEMP/cli.log"
+          grep -q 'Started' "$RUNNER_TEMP/cli.log"
 
-          # A key holder without the owner token cannot take it over.
-          test "$(curl -s -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' -H "X-Biga-Key: $key" -d '{}' "$api")" = 401
+          printf 'edited\n' >> "$project/a.txt"
+          sleep 3
 
-          hash=$(printf 'hello\n' | sha256sum | cut -d' ' -f1)
-          curl -fsS -o /dev/null -X POST -H 'Content-Type: application/json' -H "X-Biga-Key: $key" -H "Authorization: Bearer $token" \
-            -d "{\"sessionId\":\"smoke1\",\"timestamp\":1,\"sequenceNum\":0,\"tree\":{\"type\":\"directory\",\"name\":\"p\",\"path\":\".\",\"children\":[{\"type\":\"file\",\"name\":\"a.txt\",\"path\":\"a.txt\",\"size\":6,\"hash\":\"$hash\",\"content\":\"hello\\n\"}]}}" \
-            "$api/snapshot"
-
-          curl -fsS "$api/state" | python3 -c 'import json,sys; d=json.load(sys.stdin)["data"]; assert d["contents"], d; print("state ok:", d["checkpoints"][0]["label"])'
-          curl -fsS -o /dev/null http://localhost:8080/session/smoke1
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: application/x-protobuf' "$url/api/sessions/smoke1/state")" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: application/x-protobuf' "$url/api/sessions/smoke1/file?path=a.txt")" = 200
+          curl -fsS -o /dev/null "$url/session/smoke1"
+          kill "$cli"
 
       - name: Logs
         if: failure()
